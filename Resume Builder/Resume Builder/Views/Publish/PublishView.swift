@@ -202,6 +202,8 @@ struct StatusCard: View {
 
 struct QuickLinksSection: View {
     let url: String
+    @State private var showingQRCode = false
+    @State private var showingCopied = false
     
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -211,8 +213,12 @@ struct QuickLinksSection: View {
             
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 12) {
-                    ShareLinkButton(icon: "doc.on.doc", title: "Copy Link", color: .blue) {
+                    ShareLinkButton(icon: "doc.on.doc", title: showingCopied ? "Copied!" : "Copy Link", color: .blue) {
                         UIPasteboard.general.string = url
+                        showingCopied = true
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+                            showingCopied = false
+                        }
                     }
                     
                     ShareLinkButton(icon: "envelope.fill", title: "Email", color: .orange) {
@@ -234,12 +240,113 @@ struct QuickLinksSection: View {
                     }
                     
                     ShareLinkButton(icon: "qrcode", title: "QR Code", color: .purple) {
-                        // TODO: Show QR code
+                        showingQRCode = true
                     }
                 }
                 .padding(.horizontal)
             }
         }
+        .sheet(isPresented: $showingQRCode) {
+            QRCodeView(url: url)
+        }
+    }
+}
+
+// MARK: - QR Code View
+
+import CoreImage.CIFilterBuiltins
+
+struct QRCodeView: View {
+    let url: String
+    @Environment(\.dismiss) private var dismiss
+    
+    var body: some View {
+        NavigationStack {
+            VStack(spacing: 32) {
+                Spacer()
+                
+                // QR Code
+                if let qrImage = generateQRCode(from: url) {
+                    Image(uiImage: qrImage)
+                        .interpolation(.none)
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: 250, height: 250)
+                        .padding(20)
+                        .background(Color.white)
+                        .cornerRadius(20)
+                        .shadow(color: .black.opacity(0.1), radius: 10, y: 5)
+                }
+                
+                // URL
+                Text(url)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal)
+                
+                Spacer()
+                
+                // Actions
+                VStack(spacing: 12) {
+                    Button {
+                        if let qrImage = generateQRCode(from: url) {
+                            let activityVC = UIActivityViewController(activityItems: [qrImage], applicationActivities: nil)
+                            if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+                               let window = windowScene.windows.first {
+                                window.rootViewController?.present(activityVC, animated: true)
+                            }
+                        }
+                    } label: {
+                        Label("Share QR Code", systemImage: "square.and.arrow.up")
+                            .font(.headline)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 4)
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .controlSize(.large)
+                    
+                    Button {
+                        if let qrImage = generateQRCode(from: url) {
+                            UIImageWriteToSavedPhotosAlbum(qrImage, nil, nil, nil)
+                        }
+                    } label: {
+                        Label("Save to Photos", systemImage: "photo.badge.arrow.down")
+                            .font(.headline)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 4)
+                    }
+                    .buttonStyle(.bordered)
+                    .controlSize(.large)
+                }
+                .padding(.horizontal, 24)
+                .padding(.bottom, 40)
+            }
+            .navigationTitle("QR Code")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button("Done") { dismiss() }
+                }
+            }
+        }
+    }
+    
+    private func generateQRCode(from string: String) -> UIImage? {
+        let context = CIContext()
+        let filter = CIFilter.qrCodeGenerator()
+        filter.message = Data(string.utf8)
+        filter.correctionLevel = "M"
+        
+        guard let outputImage = filter.outputImage else { return nil }
+        
+        // Scale up the QR code
+        let scale = 10.0
+        let scaledImage = outputImage.transformed(by: CGAffineTransform(scaleX: scale, y: scale))
+        
+        guard let cgImage = context.createCGImage(scaledImage, from: scaledImage.extent) else { return nil }
+        
+        return UIImage(cgImage: cgImage)
     }
 }
 
