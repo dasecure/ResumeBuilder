@@ -1,13 +1,30 @@
 import Foundation
 
 class AIService {
-    // TODO: Replace with your OpenAI API key or other AI provider
-    private let apiKey = "YOUR_OPENAI_API_KEY"
     private let baseURL = "https://api.openai.com/v1/chat/completions"
     
-    enum AIError: Error {
+    private var apiKey: String {
+        UserDefaults.standard.string(forKey: "ai_api_key") ?? ""
+    }
+    
+    private var isEnabled: Bool {
+        UserDefaults.standard.bool(forKey: "ai_enabled")
+    }
+    
+    enum AIError: Error, LocalizedError {
         case invalidResponse
         case apiError(String)
+        case noApiKey
+        case disabled
+        
+        var errorDescription: String? {
+            switch self {
+            case .invalidResponse: return "Invalid response from AI"
+            case .apiError(let msg): return msg
+            case .noApiKey: return "Please add your OpenAI API key in Settings → AI Settings"
+            case .disabled: return "AI features are disabled"
+            }
+        }
     }
     
     // MARK: - Resume Enhancement
@@ -73,9 +90,12 @@ class AIService {
     // MARK: - Private
     
     private func sendRequest(prompt: String) async throws -> String {
-        guard apiKey != "YOUR_OPENAI_API_KEY" else {
-            // Return placeholder when API key not set
-            return "AI enhancement coming soon! Add your OpenAI API key to enable."
+        guard isEnabled else {
+            throw AIError.disabled
+        }
+        
+        guard !apiKey.isEmpty else {
+            throw AIError.noApiKey
         }
         
         let url = URL(string: baseURL)!
