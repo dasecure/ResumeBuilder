@@ -1,0 +1,421 @@
+import SwiftUI
+
+struct ResumeEditorView: View {
+    @EnvironmentObject var dataManager: DataManager
+    @State private var selectedSection = 0
+    
+    var body: some View {
+        NavigationStack {
+            VStack(spacing: 0) {
+                // Section Picker
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 12) {
+                        SectionTab(title: "Personal", icon: "person.fill", isSelected: selectedSection == 0)
+                            .onTapGesture { selectedSection = 0 }
+                        SectionTab(title: "Summary", icon: "text.alignleft", isSelected: selectedSection == 1)
+                            .onTapGesture { selectedSection = 1 }
+                        SectionTab(title: "Experience", icon: "briefcase.fill", isSelected: selectedSection == 2)
+                            .onTapGesture { selectedSection = 2 }
+                        SectionTab(title: "Education", icon: "graduationcap.fill", isSelected: selectedSection == 3)
+                            .onTapGesture { selectedSection = 3 }
+                        SectionTab(title: "Skills", icon: "star.fill", isSelected: selectedSection == 4)
+                            .onTapGesture { selectedSection = 4 }
+                    }
+                    .padding(.horizontal)
+                }
+                .padding(.vertical, 12)
+                .background(Color(.systemBackground))
+                
+                Divider()
+                
+                // Content
+                TabView(selection: $selectedSection) {
+                    PersonalInfoSection(info: $dataManager.resume.personalInfo)
+                        .tag(0)
+                    SummarySection(summary: $dataManager.resume.summary)
+                        .tag(1)
+                    ExperienceSection(experiences: $dataManager.resume.experiences)
+                        .tag(2)
+                    EducationSection(education: $dataManager.resume.education)
+                        .tag(3)
+                    SkillsSection(skills: $dataManager.resume.skills)
+                        .tag(4)
+                }
+                .tabViewStyle(.page(indexDisplayMode: .never))
+            }
+            .navigationTitle("Build Resume")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button("Preview") {
+                        // TODO: Show preview
+                    }
+                }
+            }
+            .onChange(of: dataManager.resume) { _, _ in
+                dataManager.saveResume()
+            }
+        }
+    }
+}
+
+struct SectionTab: View {
+    let title: String
+    let icon: String
+    let isSelected: Bool
+    
+    var body: some View {
+        VStack(spacing: 6) {
+            Image(systemName: icon)
+                .font(.title3)
+            Text(title)
+                .font(.caption)
+                .fontWeight(.medium)
+        }
+        .foregroundColor(isSelected ? .white : .secondary)
+        .padding(.horizontal, 16)
+        .padding(.vertical, 10)
+        .background(isSelected ? Color.blue : Color(.systemGray6))
+        .cornerRadius(12)
+    }
+}
+
+// MARK: - Personal Info Section
+
+struct PersonalInfoSection: View {
+    @Binding var info: PersonalInfo
+    
+    var body: some View {
+        Form {
+            Section("Basic Information") {
+                TextField("Full Name", text: $info.fullName)
+                    .textContentType(.name)
+                TextField("Email", text: $info.email)
+                    .textContentType(.emailAddress)
+                    .keyboardType(.emailAddress)
+                    .autocapitalization(.none)
+                TextField("Phone", text: $info.phone)
+                    .textContentType(.telephoneNumber)
+                    .keyboardType(.phonePad)
+                TextField("Location (City, State)", text: $info.location)
+                    .textContentType(.addressCityAndState)
+            }
+            
+            Section("Online Presence") {
+                TextField("LinkedIn URL", text: $info.linkedIn)
+                    .autocapitalization(.none)
+                TextField("Personal Website", text: $info.website)
+                    .autocapitalization(.none)
+                    .keyboardType(.URL)
+            }
+        }
+    }
+}
+
+// MARK: - Summary Section
+
+struct SummarySection: View {
+    @Binding var summary: String
+    @EnvironmentObject var dataManager: DataManager
+    @State private var isGenerating = false
+    
+    private let aiService = AIService()
+    
+    var body: some View {
+        Form {
+            Section {
+                TextEditor(text: $summary)
+                    .frame(minHeight: 150)
+            } header: {
+                Text("Professional Summary")
+            } footer: {
+                Text("A brief 2-3 sentence overview of your professional background and key strengths.")
+            }
+            
+            Section {
+                Button(action: generateWithAI) {
+                    HStack {
+                        Image(systemName: "sparkles")
+                        Text(isGenerating ? "Generating..." : "Generate with AI")
+                    }
+                }
+                .disabled(isGenerating)
+            }
+        }
+    }
+    
+    private func generateWithAI() {
+        isGenerating = true
+        Task {
+            do {
+                let generated = try await aiService.generateSummary(resume: dataManager.resume)
+                await MainActor.run {
+                    summary = generated
+                    isGenerating = false
+                }
+            } catch {
+                isGenerating = false
+            }
+        }
+    }
+}
+
+// MARK: - Experience Section
+
+struct ExperienceSection: View {
+    @Binding var experiences: [Experience]
+    @State private var editingExperience: Experience?
+    @State private var showingAdd = false
+    
+    var body: some View {
+        List {
+            ForEach(experiences) { experience in
+                ExperienceRow(experience: experience)
+                    .contentShape(Rectangle())
+                    .onTapGesture {
+                        editingExperience = experience
+                    }
+            }
+            .onDelete { indexSet in
+                experiences.remove(atOffsets: indexSet)
+            }
+            .onMove { from, to in
+                experiences.move(fromOffsets: from, toOffset: to)
+            }
+            
+            Button(action: { showingAdd = true }) {
+                Label("Add Experience", systemImage: "plus.circle.fill")
+            }
+        }
+        .sheet(isPresented: $showingAdd) {
+            ExperienceEditView(experience: Experience()) { newExp in
+                experiences.insert(newExp, at: 0)
+            }
+        }
+        .sheet(item: $editingExperience) { exp in
+            ExperienceEditView(experience: exp) { updated in
+                if let index = experiences.firstIndex(where: { $0.id == updated.id }) {
+                    experiences[index] = updated
+                }
+            }
+        }
+    }
+}
+
+struct ExperienceRow: View {
+    let experience: Experience
+    
+    private var dateRange: String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "MMM yyyy"
+        let start = formatter.string(from: experience.startDate)
+        let end = experience.isCurrentRole ? "Present" : formatter.string(from: experience.endDate ?? Date())
+        return "\(start) - \(end)"
+    }
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(experience.title)
+                .font(.headline)
+            Text(experience.company)
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+            Text(dateRange)
+                .font(.caption)
+                .foregroundStyle(.tertiary)
+        }
+        .padding(.vertical, 4)
+    }
+}
+
+// MARK: - Education Section
+
+struct EducationSection: View {
+    @Binding var education: [Education]
+    @State private var showingAdd = false
+    
+    var body: some View {
+        List {
+            ForEach(education) { edu in
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(edu.degree)
+                        .font(.headline)
+                    Text(edu.institution)
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                    if !edu.field.isEmpty {
+                        Text(edu.field)
+                            .font(.caption)
+                            .foregroundStyle(.tertiary)
+                    }
+                }
+                .padding(.vertical, 4)
+            }
+            .onDelete { indexSet in
+                education.remove(atOffsets: indexSet)
+            }
+            
+            Button(action: { showingAdd = true }) {
+                Label("Add Education", systemImage: "plus.circle.fill")
+            }
+        }
+        .sheet(isPresented: $showingAdd) {
+            EducationEditView { newEdu in
+                education.insert(newEdu, at: 0)
+            }
+        }
+    }
+}
+
+// MARK: - Skills Section
+
+struct SkillsSection: View {
+    @Binding var skills: [String]
+    @State private var newSkill = ""
+    @State private var suggestedSkills: [String] = []
+    @State private var isLoadingSuggestions = false
+    
+    private let aiService = AIService()
+    
+    var body: some View {
+        Form {
+            Section("Your Skills") {
+                FlowLayout(spacing: 8) {
+                    ForEach(skills, id: \.self) { skill in
+                        SkillChip(text: skill) {
+                            skills.removeAll { $0 == skill }
+                        }
+                    }
+                }
+                
+                HStack {
+                    TextField("Add a skill", text: $newSkill)
+                        .onSubmit { addSkill() }
+                    
+                    Button(action: addSkill) {
+                        Image(systemName: "plus.circle.fill")
+                            .foregroundColor(.blue)
+                    }
+                    .disabled(newSkill.isEmpty)
+                }
+            }
+            
+            Section("AI Suggestions") {
+                if isLoadingSuggestions {
+                    ProgressView()
+                } else if !suggestedSkills.isEmpty {
+                    FlowLayout(spacing: 8) {
+                        ForEach(suggestedSkills, id: \.self) { skill in
+                            Button(action: { 
+                                skills.append(skill)
+                                suggestedSkills.removeAll { $0 == skill }
+                            }) {
+                                Text("+ \(skill)")
+                                    .font(.caption)
+                                    .padding(.horizontal, 12)
+                                    .padding(.vertical, 6)
+                                    .background(Color.green.opacity(0.1))
+                                    .foregroundColor(.green)
+                                    .cornerRadius(16)
+                            }
+                        }
+                    }
+                } else {
+                    Button("Get AI Suggestions") {
+                        getSuggestions()
+                    }
+                }
+            }
+        }
+    }
+    
+    private func addSkill() {
+        guard !newSkill.isEmpty else { return }
+        skills.append(newSkill)
+        newSkill = ""
+    }
+    
+    private func getSuggestions() {
+        isLoadingSuggestions = true
+        Task {
+            do {
+                let suggestions = try await aiService.suggestSkills(for: "Software Engineer", existingSkills: skills)
+                await MainActor.run {
+                    suggestedSkills = suggestions.filter { !skills.contains($0) }
+                    isLoadingSuggestions = false
+                }
+            } catch {
+                isLoadingSuggestions = false
+            }
+        }
+    }
+}
+
+struct SkillChip: View {
+    let text: String
+    let onRemove: () -> Void
+    
+    var body: some View {
+        HStack(spacing: 4) {
+            Text(text)
+                .font(.caption)
+            Button(action: onRemove) {
+                Image(systemName: "xmark.circle.fill")
+                    .font(.caption2)
+            }
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 6)
+        .background(Color.blue.opacity(0.1))
+        .foregroundColor(.blue)
+        .cornerRadius(16)
+    }
+}
+
+// Simple FlowLayout for skills
+struct FlowLayout: Layout {
+    var spacing: CGFloat = 8
+    
+    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
+        let result = FlowResult(in: proposal.width ?? 0, subviews: subviews, spacing: spacing)
+        return CGSize(width: proposal.width ?? 0, height: result.height)
+    }
+    
+    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
+        let result = FlowResult(in: bounds.width, subviews: subviews, spacing: spacing)
+        for (index, subview) in subviews.enumerated() {
+            subview.place(at: CGPoint(x: bounds.minX + result.positions[index].x, 
+                                      y: bounds.minY + result.positions[index].y), 
+                         proposal: .unspecified)
+        }
+    }
+    
+    struct FlowResult {
+        var positions: [CGPoint] = []
+        var height: CGFloat = 0
+        
+        init(in width: CGFloat, subviews: Subviews, spacing: CGFloat) {
+            var x: CGFloat = 0
+            var y: CGFloat = 0
+            var rowHeight: CGFloat = 0
+            
+            for subview in subviews {
+                let size = subview.sizeThatFits(.unspecified)
+                if x + size.width > width && x > 0 {
+                    x = 0
+                    y += rowHeight + spacing
+                    rowHeight = 0
+                }
+                positions.append(CGPoint(x: x, y: y))
+                rowHeight = max(rowHeight, size.height)
+                x += size.width + spacing
+            }
+            height = y + rowHeight
+        }
+    }
+}
+
+#Preview {
+    ResumeEditorView()
+        .environmentObject(DataManager())
+}
