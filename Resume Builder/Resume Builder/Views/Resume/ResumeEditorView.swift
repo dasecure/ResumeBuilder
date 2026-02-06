@@ -52,7 +52,10 @@ struct ResumeEditorView: View {
                     }
                 }
             }
-            .onChange(of: dataManager.resume) { _, _ in
+            .onDisappear {
+                dataManager.saveResume()
+            }
+            .onChange(of: dataManager.resume) { 
                 dataManager.saveResume()
             }
         }
