@@ -59,6 +59,25 @@ class AIService {
         return try await sendRequest(prompt: prompt)
     }
     
+    func improveSummary(existing: String, resume: Resume) async throws -> String {
+        let experienceText = resume.experiences.map { "\($0.title) at \($0.company)" }.joined(separator: ", ")
+        let skillsText = resume.skills.joined(separator: ", ")
+        
+        let prompt = """
+        Improve this professional summary to be more elegant, professional, and compelling. Keep the core message but enhance the language and impact.
+        
+        Current Summary: \(existing)
+        
+        Context:
+        - Experience: \(experienceText)
+        - Skills: \(skillsText)
+        
+        Return only the improved summary (2-3 sentences). Make it powerful and memorable.
+        """
+        
+        return try await sendRequest(prompt: prompt)
+    }
+    
     func suggestSkills(for title: String, existingSkills: [String]) async throws -> [String] {
         let prompt = """
         Suggest 5 relevant skills for someone with the job title "\(title)" that they might be missing.

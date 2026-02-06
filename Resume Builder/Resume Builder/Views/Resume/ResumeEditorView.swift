@@ -133,6 +133,7 @@ struct SummarySection: View {
     @Binding var summary: String
     @EnvironmentObject var dataManager: DataManager
     @State private var isGenerating = false
+    @State private var errorMessage: String?
     
     private let aiService = AIService()
     
@@ -150,26 +151,50 @@ struct SummarySection: View {
             Section {
                 Button(action: generateWithAI) {
                     HStack {
-                        Image(systemName: "sparkles")
-                        Text(isGenerating ? "Generating..." : "Generate with AI")
+                        if isGenerating {
+                            ProgressView()
+                                .scaleEffect(0.8)
+                        } else {
+                            Image(systemName: "sparkles")
+                        }
+                        Text(isGenerating ? "Improving..." : (summary.isEmpty ? "Generate with AI" : "Improve with AI"))
                     }
                 }
                 .disabled(isGenerating)
+                
+                if let error = errorMessage {
+                    Text(error)
+                        .font(.caption)
+                        .foregroundColor(.red)
+                }
+            } footer: {
+                Text("AI will enhance your summary to be more professional and compelling.")
             }
         }
     }
     
     private func generateWithAI() {
         isGenerating = true
+        errorMessage = nil
         Task {
             do {
-                let generated = try await aiService.generateSummary(resume: dataManager.resume)
+                let generated: String
+                if summary.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                    // Generate new summary based on resume data
+                    generated = try await aiService.generateSummary(resume: dataManager.resume)
+                } else {
+                    // Improve existing summary
+                    generated = try await aiService.improveSummary(existing: summary, resume: dataManager.resume)
+                }
                 await MainActor.run {
                     summary = generated
                     isGenerating = false
                 }
             } catch {
-                isGenerating = false
+                await MainActor.run {
+                    errorMessage = error.localizedDescription
+                    isGenerating = false
+                }
             }
         }
     }
