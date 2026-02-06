@@ -42,6 +42,10 @@ struct SettingsView: View {
                 
                 // Resume Section
                 Section("Resume") {
+                    NavigationLink(destination: TemplateColorsView()) {
+                        Label("Template Colors", systemImage: "paintpalette.fill")
+                    }
+                    
                     NavigationLink(destination: ExportOptionsView()) {
                         Label("Export Resume", systemImage: "square.and.arrow.up")
                     }
@@ -107,6 +111,148 @@ struct SettingsView: View {
                 Text("This will permanently delete all your resume data. This action cannot be undone.")
             }
         }
+    }
+}
+
+struct TemplateColorsView: View {
+    @EnvironmentObject var dataManager: DataManager
+    @State private var selectedTemplate: ResumeTemplate = .professional
+    
+    var body: some View {
+        List {
+            // Template Picker
+            Section {
+                Picker("Template", selection: $selectedTemplate) {
+                    ForEach(ResumeTemplate.allCases, id: \.self) { template in
+                        Text(template.rawValue).tag(template)
+                    }
+                }
+                .pickerStyle(.segmented)
+            }
+            
+            // Color Presets
+            Section("Color Presets") {
+                ForEach(TemplateColors.presets, id: \.name) { preset in
+                    Button {
+                        dataManager.resume.templateSettings.setColors(preset.colors, for: selectedTemplate)
+                        dataManager.saveResume()
+                    } label: {
+                        HStack(spacing: 12) {
+                            // Color preview circles
+                            HStack(spacing: 4) {
+                                Circle()
+                                    .fill(Color(hex: preset.colors.primary))
+                                    .frame(width: 24, height: 24)
+                                Circle()
+                                    .fill(Color(hex: preset.colors.accent))
+                                    .frame(width: 24, height: 24)
+                                Circle()
+                                    .fill(Color(hex: preset.colors.background))
+                                    .frame(width: 24, height: 24)
+                                    .overlay(
+                                        Circle().stroke(Color.gray.opacity(0.3), lineWidth: 1)
+                                    )
+                            }
+                            
+                            Text(preset.name)
+                                .foregroundStyle(.primary)
+                            
+                            Spacer()
+                            
+                            if dataManager.resume.templateSettings.colors(for: selectedTemplate) == preset.colors {
+                                Image(systemName: "checkmark.circle.fill")
+                                    .foregroundColor(.accentColor)
+                            }
+                        }
+                    }
+                }
+            }
+            
+            // Current Colors
+            Section("Current Colors") {
+                ColorRow(
+                    title: "Primary",
+                    color: dataManager.resume.templateSettings.colors(for: selectedTemplate).primary,
+                    systemImage: "paintbrush.fill"
+                )
+                ColorRow(
+                    title: "Accent",
+                    color: dataManager.resume.templateSettings.colors(for: selectedTemplate).accent,
+                    systemImage: "star.fill"
+                )
+                ColorRow(
+                    title: "Background",
+                    color: dataManager.resume.templateSettings.colors(for: selectedTemplate).background,
+                    systemImage: "rectangle.fill"
+                )
+            }
+            
+            // Reset
+            Section {
+                Button(action: resetToDefault) {
+                    Label("Reset to Default", systemImage: "arrow.counterclockwise")
+                }
+            }
+        }
+        .navigationTitle("Template Colors")
+    }
+    
+    private func resetToDefault() {
+        dataManager.resume.templateSettings.setColors(selectedTemplate.defaultColors, for: selectedTemplate)
+        dataManager.saveResume()
+    }
+}
+
+struct ColorRow: View {
+    let title: String
+    let color: String
+    let systemImage: String
+    
+    var body: some View {
+        HStack {
+            Image(systemName: systemImage)
+                .foregroundColor(Color(hex: color))
+            Text(title)
+            Spacer()
+            RoundedRectangle(cornerRadius: 6)
+                .fill(Color(hex: color))
+                .frame(width: 60, height: 28)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 6)
+                        .stroke(Color.gray.opacity(0.3), lineWidth: 1)
+                )
+            Text(color.uppercased())
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .monospaced()
+        }
+    }
+}
+
+// Color extension for hex support
+extension Color {
+    init(hex: String) {
+        let hex = hex.trimmingCharacters(in: CharacterSet.alphanumerics.inverted)
+        var int: UInt64 = 0
+        Scanner(string: hex).scanHexInt64(&int)
+        let a, r, g, b: UInt64
+        switch hex.count {
+        case 3: // RGB (12-bit)
+            (a, r, g, b) = (255, (int >> 8) * 17, (int >> 4 & 0xF) * 17, (int & 0xF) * 17)
+        case 6: // RGB (24-bit)
+            (a, r, g, b) = (255, int >> 16, int >> 8 & 0xFF, int & 0xFF)
+        case 8: // ARGB (32-bit)
+            (a, r, g, b) = (int >> 24, int >> 16 & 0xFF, int >> 8 & 0xFF, int & 0xFF)
+        default:
+            (a, r, g, b) = (255, 0, 0, 0)
+        }
+        self.init(
+            .sRGB,
+            red: Double(r) / 255,
+            green: Double(g) / 255,
+            blue: Double(b) / 255,
+            opacity: Double(a) / 255
+        )
     }
 }
 

@@ -14,6 +14,7 @@ struct Resume: Codable, Identifiable, Equatable {
     var patents: [Patent]
     var hobbies: [String]
     var template: ResumeTemplate
+    var templateSettings: TemplateSettings
     var isPublished: Bool
     var publishedURL: String?
     var customDomain: String?
@@ -31,6 +32,7 @@ struct Resume: Codable, Identifiable, Equatable {
         self.patents = []
         self.hobbies = []
         self.template = .professional
+        self.templateSettings = TemplateSettings()
         self.isPublished = false
         self.createdAt = Date()
         self.updatedAt = Date()
@@ -138,11 +140,57 @@ enum ResumeTemplate: String, Codable, CaseIterable {
         }
     }
     
-    var colors: (primary: String, secondary: String, accent: String) {
+    var defaultColors: TemplateColors {
         switch self {
-        case .professional: return ("#1a1a2e", "#f5f5f5", "#0066cc")
-        case .casual: return ("#2d3436", "#ffffff", "#00b894")
-        case .playful: return ("#6c5ce7", "#ffeaa7", "#fd79a8")
+        case .professional: return TemplateColors(primary: "#0066cc", secondary: "#1a1a2e", accent: "#0066cc", background: "#ffffff")
+        case .casual: return TemplateColors(primary: "#00b894", secondary: "#2d3436", accent: "#00b894", background: "#f8f9fa")
+        case .playful: return TemplateColors(primary: "#6c5ce7", secondary: "#ffffff", accent: "#fd79a8", background: "#6c5ce7")
+        }
+    }
+}
+
+struct TemplateColors: Codable, Equatable {
+    var primary: String      // Main accent color (links, headers)
+    var secondary: String    // Text color
+    var accent: String       // Highlights, buttons
+    var background: String   // Page background
+    
+    static let presets: [(name: String, colors: TemplateColors)] = [
+        ("Ocean Blue", TemplateColors(primary: "#0066cc", secondary: "#1a1a2e", accent: "#0066cc", background: "#ffffff")),
+        ("Forest Green", TemplateColors(primary: "#00b894", secondary: "#2d3436", accent: "#00b894", background: "#ffffff")),
+        ("Royal Purple", TemplateColors(primary: "#6c5ce7", secondary: "#2d3436", accent: "#6c5ce7", background: "#ffffff")),
+        ("Sunset Orange", TemplateColors(primary: "#e17055", secondary: "#2d3436", accent: "#e17055", background: "#ffffff")),
+        ("Rose Pink", TemplateColors(primary: "#fd79a8", secondary: "#2d3436", accent: "#fd79a8", background: "#ffffff")),
+        ("Midnight", TemplateColors(primary: "#74b9ff", secondary: "#dfe6e9", accent: "#74b9ff", background: "#2d3436")),
+        ("Coral", TemplateColors(primary: "#ff7675", secondary: "#2d3436", accent: "#ff7675", background: "#fff5f5")),
+        ("Teal", TemplateColors(primary: "#00cec9", secondary: "#2d3436", accent: "#00cec9", background: "#ffffff")),
+    ]
+}
+
+struct TemplateSettings: Codable, Equatable {
+    var professionalColors: TemplateColors
+    var casualColors: TemplateColors
+    var playfulColors: TemplateColors
+    
+    init() {
+        self.professionalColors = ResumeTemplate.professional.defaultColors
+        self.casualColors = ResumeTemplate.casual.defaultColors
+        self.playfulColors = ResumeTemplate.playful.defaultColors
+    }
+    
+    func colors(for template: ResumeTemplate) -> TemplateColors {
+        switch template {
+        case .professional: return professionalColors
+        case .casual: return casualColors
+        case .playful: return playfulColors
+        }
+    }
+    
+    mutating func setColors(_ colors: TemplateColors, for template: ResumeTemplate) {
+        switch template {
+        case .professional: professionalColors = colors
+        case .casual: casualColors = colors
+        case .playful: playfulColors = colors
         }
     }
 }

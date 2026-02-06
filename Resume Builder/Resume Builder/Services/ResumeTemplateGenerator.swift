@@ -18,6 +18,7 @@ class ResumeTemplateGenerator {
     private func generateProfessional(_ r: Resume) -> String {
         let dateFormatter = DateFormatter()
         dateFormatter.dateFormat = "MMM yyyy"
+        let colors = r.templateSettings.colors(for: .professional)
         
         return """
         <!DOCTYPE html>
@@ -28,26 +29,32 @@ class ResumeTemplateGenerator {
             <title>\(escape(r.personalInfo.fullName)) - Resume</title>
             <link href="https://fonts.googleapis.com/css2?family=Merriweather:wght@400;700&family=Open+Sans:wght@400;600&display=swap" rel="stylesheet">
             <style>
+                :root {
+                    --primary: \(colors.primary);
+                    --secondary: \(colors.secondary);
+                    --accent: \(colors.accent);
+                    --background: \(colors.background);
+                }
                 * { margin: 0; padding: 0; box-sizing: border-box; }
                 body {
                     font-family: 'Open Sans', sans-serif;
                     line-height: 1.6;
-                    color: #333;
+                    color: var(--secondary);
                     max-width: 800px;
                     margin: 0 auto;
                     padding: 40px 24px;
-                    background: #fff;
+                    background: var(--background);
                 }
                 header {
                     text-align: center;
                     margin-bottom: 32px;
                     padding-bottom: 24px;
-                    border-bottom: 2px solid #0066cc;
+                    border-bottom: 2px solid var(--primary);
                 }
                 h1 {
                     font-family: 'Merriweather', serif;
                     font-size: 2.5rem;
-                    color: #1a1a2e;
+                    color: var(--secondary);
                     margin-bottom: 8px;
                 }
                 .contact {
@@ -58,7 +65,7 @@ class ResumeTemplateGenerator {
                     color: #666;
                     font-size: 0.9rem;
                 }
-                .contact a { color: #0066cc; text-decoration: none; }
+                .contact a { color: var(--primary); text-decoration: none; }
                 .summary {
                     font-size: 1.05rem;
                     color: #444;
@@ -70,7 +77,7 @@ class ResumeTemplateGenerator {
                 h2 {
                     font-family: 'Merriweather', serif;
                     font-size: 1.3rem;
-                    color: #0066cc;
+                    color: var(--primary);
                     border-bottom: 1px solid #ddd;
                     padding-bottom: 8px;
                     margin-bottom: 16px;
@@ -84,7 +91,7 @@ class ResumeTemplateGenerator {
                     align-items: baseline;
                     flex-wrap: wrap;
                 }
-                h3 { font-size: 1.1rem; color: #1a1a2e; }
+                h3 { font-size: 1.1rem; color: var(--secondary); }
                 .company, .institution { color: #666; font-weight: 600; }
                 .date { color: #888; font-size: 0.9rem; }
                 .description { margin-top: 8px; color: #444; }
