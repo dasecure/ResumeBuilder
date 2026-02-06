@@ -3,6 +3,7 @@ import SwiftUI
 struct ResumeEditorView: View {
     @EnvironmentObject var dataManager: DataManager
     @State private var selectedSection = 0
+    @State private var showingPreview = false
     
     var body: some View {
         NavigationStack {
@@ -48,9 +49,12 @@ struct ResumeEditorView: View {
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
                     Button("Preview") {
-                        // TODO: Show preview
+                        showingPreview = true
                     }
                 }
+            }
+            .sheet(isPresented: $showingPreview) {
+                ResumePreviewSheet(resume: dataManager.resume)
             }
             .onDisappear {
                 dataManager.saveResume()
@@ -421,4 +425,45 @@ struct FlowLayout: Layout {
 #Preview {
     ResumeEditorView()
         .environmentObject(DataManager())
+}
+
+// MARK: - Resume Preview Sheet
+
+import WebKit
+
+struct ResumePreviewSheet: View {
+    let resume: Resume
+    @Environment(\.dismiss) private var dismiss
+    
+    var body: some View {
+        NavigationStack {
+            WebView(html: generateHTML())
+                .navigationTitle("Preview")
+                .navigationBarTitleDisplayMode(.inline)
+                .toolbar {
+                    ToolbarItem(placement: .topBarTrailing) {
+                        Button("Done") { dismiss() }
+                    }
+                }
+        }
+    }
+    
+    private func generateHTML() -> String {
+        let generator = ResumeTemplateGenerator()
+        return generator.generate(resume: resume)
+    }
+}
+
+struct WebView: UIViewRepresentable {
+    let html: String
+    
+    func makeUIView(context: Context) -> WKWebView {
+        let webView = WKWebView()
+        webView.loadHTMLString(html, baseURL: nil)
+        return webView
+    }
+    
+    func updateUIView(_ webView: WKWebView, context: Context) {
+        webView.loadHTMLString(html, baseURL: nil)
+    }
 }
