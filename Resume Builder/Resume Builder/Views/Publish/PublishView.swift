@@ -22,55 +22,48 @@ struct PublishView: View {
                     )
                     
                     // Actions
-                    VStack(spacing: 12) {
-                        // Publish Button
+                    VStack(spacing: 16) {
+                        // Publish Button - Primary CTA
                         Button(action: publish) {
-                            HStack {
-                                if isPublishing {
-                                    ProgressView()
-                                        .tint(.white)
-                                } else {
-                                    Image(systemName: dataManager.resume.isPublished ? "arrow.clockwise" : "globe")
-                                }
-                                Text(dataManager.resume.isPublished ? "Update Resume" : "Publish to Web")
-                                    .fontWeight(.semibold)
+                            if isPublishing {
+                                ProgressView()
+                                    .frame(maxWidth: .infinity)
+                                    .padding(.vertical, 4)
+                            } else {
+                                Label(
+                                    dataManager.resume.isPublished ? "Update Resume" : "Publish to Web",
+                                    systemImage: dataManager.resume.isPublished ? "arrow.triangle.2.circlepath" : "globe"
+                                )
+                                .font(.headline)
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 4)
                             }
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 16)
-                            .background(Color.blue)
-                            .foregroundColor(.white)
-                            .cornerRadius(14)
                         }
+                        .buttonStyle(.borderedProminent)
+                        .controlSize(.large)
                         .disabled(isPublishing)
                         
                         if dataManager.resume.isPublished {
                             // Share Button
                             Button(action: { showShareSheet = true }) {
-                                HStack {
-                                    Image(systemName: "square.and.arrow.up")
-                                    Text("Share Resume")
-                                        .fontWeight(.semibold)
-                                }
-                                .frame(maxWidth: .infinity)
-                                .padding(.vertical, 16)
-                                .background(Color.green)
-                                .foregroundColor(.white)
-                                .cornerRadius(14)
+                                Label("Share Resume", systemImage: "square.and.arrow.up")
+                                    .font(.headline)
+                                    .frame(maxWidth: .infinity)
+                                    .padding(.vertical, 4)
                             }
+                            .buttonStyle(.bordered)
+                            .tint(.green)
+                            .controlSize(.large)
                             
                             // Custom Domain Button
                             Button(action: { showSubdomainSetup = true }) {
-                                HStack {
-                                    Image(systemName: "link")
-                                    Text("Set Up Custom Domain")
-                                        .fontWeight(.semibold)
-                                }
-                                .frame(maxWidth: .infinity)
-                                .padding(.vertical, 16)
-                                .background(Color(.systemGray5))
-                                .foregroundColor(.primary)
-                                .cornerRadius(14)
+                                Label("Custom Domain", systemImage: "link.badge.plus")
+                                    .font(.headline)
+                                    .frame(maxWidth: .infinity)
+                                    .padding(.vertical, 4)
                             }
+                            .buttonStyle(.bordered)
+                            .controlSize(.large)
                         }
                     }
                     .padding(.horizontal)

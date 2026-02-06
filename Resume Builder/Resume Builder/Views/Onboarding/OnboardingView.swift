@@ -171,35 +171,27 @@ struct SignInPage: View {
             Spacer()
             
             // Buttons
-            VStack(spacing: 12) {
-                // Sign In Button
+            VStack(spacing: 16) {
+                // Sign In Button - Primary CTA
                 Button(action: { authManager.signIn() }) {
-                    HStack(spacing: 12) {
-                        Image(systemName: "person.fill")
-                        Text("Sign in with GitHub")
-                            .fontWeight(.semibold)
-                    }
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 16)
-                    .background(Color.primary)
-                    .foregroundColor(Color(.systemBackground))
-                    .cornerRadius(14)
+                    Label("Sign in with GitHub", systemImage: "arrow.right.circle.fill")
+                        .font(.headline)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 16)
                 }
+                .buttonStyle(.borderedProminent)
+                .controlSize(.large)
                 .disabled(authManager.isLoading)
                 
-                // Create Account Button
+                // Create Account Button - Secondary
                 Button(action: createGitHubAccount) {
-                    HStack(spacing: 12) {
-                        Image(systemName: "person.badge.plus")
-                        Text("Create GitHub Account")
-                            .fontWeight(.semibold)
-                    }
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 16)
-                    .background(Color(.systemGray5))
-                    .foregroundColor(.primary)
-                    .cornerRadius(14)
+                    Label("Create GitHub Account", systemImage: "person.badge.plus")
+                        .font(.headline)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 16)
                 }
+                .buttonStyle(.bordered)
+                .controlSize(.large)
                 
                 if authManager.isLoading {
                     ProgressView()
@@ -207,7 +199,7 @@ struct SignInPage: View {
                 }
                 
                 if let error = authManager.error {
-                    Text(error)
+                    Label(error, systemImage: "exclamationmark.triangle.fill")
                         .font(.caption)
                         .foregroundColor(.red)
                         .multilineTextAlignment(.center)
@@ -215,7 +207,7 @@ struct SignInPage: View {
                 }
             }
             .padding(.horizontal, 24)
-            .padding(.bottom, 40)
+            .padding(.bottom, 50)
         }
     }
     

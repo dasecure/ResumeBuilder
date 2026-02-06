@@ -60,9 +60,11 @@ struct ResumeEditorView: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
-                    Button("Preview") {
+                    Button {
                         dataManager.saveResume()
                         showingPreview = true
+                    } label: {
+                        Label("Preview", systemImage: "eye.fill")
                     }
                 }
             }
@@ -93,18 +95,22 @@ struct SectionTab: View {
     let isSelected: Bool
     
     var body: some View {
-        VStack(spacing: 6) {
+        VStack(spacing: 4) {
             Image(systemName: icon)
-                .font(.title3)
+                .font(.system(size: 20, weight: isSelected ? .semibold : .regular))
+                .symbolRenderingMode(.hierarchical)
             Text(title)
-                .font(.caption)
-                .fontWeight(.medium)
+                .font(.caption2)
+                .fontWeight(isSelected ? .semibold : .medium)
         }
-        .foregroundColor(isSelected ? .white : .secondary)
-        .padding(.horizontal, 16)
-        .padding(.vertical, 10)
-        .background(isSelected ? Color.blue : Color(.systemGray6))
-        .cornerRadius(12)
+        .foregroundStyle(isSelected ? Color.accentColor : Color.secondary)
+        .padding(.horizontal, 14)
+        .padding(.vertical, 8)
+        .background(
+            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                .fill(isSelected ? Color.accentColor.opacity(0.12) : Color.clear)
+        )
+        .contentShape(Rectangle())
     }
 }
 

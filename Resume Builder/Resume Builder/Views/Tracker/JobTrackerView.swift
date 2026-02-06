@@ -157,10 +157,10 @@ struct FilterPill: View {
     let count: Int
     
     var body: some View {
-        HStack(spacing: 6) {
+        HStack(spacing: 5) {
             Text(title)
                 .font(.subheadline)
-                .fontWeight(.medium)
+                .fontWeight(isSelected ? .semibold : .medium)
             
             if count > 0 {
                 Text("\(count)")
@@ -168,15 +168,20 @@ struct FilterPill: View {
                     .fontWeight(.bold)
                     .padding(.horizontal, 6)
                     .padding(.vertical, 2)
-                    .background(isSelected ? Color.white.opacity(0.3) : Color.gray.opacity(0.2))
-                    .cornerRadius(10)
+                    .background(
+                        Capsule()
+                            .fill(isSelected ? Color.white.opacity(0.25) : Color(.systemGray4))
+                    )
             }
         }
-        .padding(.horizontal, 16)
+        .padding(.horizontal, 14)
         .padding(.vertical, 8)
-        .background(isSelected ? Color.blue : Color(.systemGray6))
-        .foregroundColor(isSelected ? .white : .primary)
-        .cornerRadius(20)
+        .background(
+            Capsule()
+                .fill(isSelected ? Color.accentColor : Color(.systemGray6))
+        )
+        .foregroundStyle(isSelected ? .white : .primary)
+        .contentShape(Capsule())
     }
 }
 
@@ -235,22 +240,19 @@ struct ApplicationRow: View {
 
 struct EmptyStateView: View {
     var body: some View {
-        VStack(spacing: 16) {
-            Image(systemName: "briefcase")
-                .font(.system(size: 60))
-                .foregroundStyle(.tertiary)
-            
-            Text("No Applications Yet")
-                .font(.title3)
-                .fontWeight(.semibold)
-            
-            Text("Start tracking your job applications\nto stay organized")
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
-                .multilineTextAlignment(.center)
+        ContentUnavailableView {
+            Label("No Applications", systemImage: "briefcase.fill")
+        } description: {
+            Text("Start tracking your job applications to stay organized")
+        } actions: {
+            Button {
+                // Will be handled by parent
+            } label: {
+                Label("Add Application", systemImage: "plus")
+            }
+            .buttonStyle(.borderedProminent)
+            .hidden() // Parent has the add button
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(Color(.systemBackground))
     }
 }
 
