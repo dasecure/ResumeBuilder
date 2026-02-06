@@ -106,6 +106,9 @@ struct PublishView: View {
             return
         }
         
+        // Save any pending changes first
+        dataManager.saveResume()
+        
         isPublishing = true
         
         Task {
@@ -113,6 +116,9 @@ struct PublishView: View {
                 let apiService = GitHubAPIService(accessToken: token)
                 let generator = ResumeTemplateGenerator()
                 let html = generator.generate(resume: dataManager.resume)
+                
+                print("📄 Publishing resume for: \(dataManager.resume.personalInfo.fullName)")
+                print("📝 Summary: \(dataManager.resume.summary.prefix(50))...")
                 
                 let url = try await apiService.deployPortfolio(
                     username: username,
