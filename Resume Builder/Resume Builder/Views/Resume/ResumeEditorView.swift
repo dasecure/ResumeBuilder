@@ -147,8 +147,18 @@ struct SummarySection: View {
     @EnvironmentObject var dataManager: DataManager
     @State private var isGenerating = false
     @State private var errorMessage: String?
+    @State private var customPrompt = ""
+    @State private var showCustomPrompt = false
     
     private let aiService = AIService()
+    
+    let quickPrompts = [
+        "Make it shorter",
+        "Make it more professional",
+        "Add more impact",
+        "Focus on leadership",
+        "Highlight technical skills"
+    ]
     
     var body: some View {
         Form {
@@ -161,8 +171,9 @@ struct SummarySection: View {
                 Text("A brief 2-3 sentence overview of your professional background and key strengths.")
             }
             
-            Section {
-                Button(action: generateWithAI) {
+            Section("AI Assistant") {
+                // Quick action buttons
+                Button(action: { generateWithAI(prompt: nil) }) {
                     HStack {
                         if isGenerating {
                             ProgressView()
@@ -170,38 +181,70 @@ struct SummarySection: View {
                         } else {
                             Image(systemName: "sparkles")
                         }
-                        Text(isGenerating ? "Improving..." : (summary.isEmpty ? "Generate with AI" : "Improve with AI"))
+                        Text(isGenerating ? "Working..." : (summary.isEmpty ? "Generate with AI" : "Improve with AI"))
                     }
                 }
-                .disabled(isGenerating)
+                .disabled(isGenerating || (showCustomPrompt && customPrompt.isEmpty))
+                
+                // Quick prompts
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 8) {
+                        ForEach(quickPrompts, id: \.self) { prompt in
+                            Button(action: { generateWithAI(prompt: prompt) }) {
+                                Text(prompt)
+                                    .font(.caption)
+                                    .padding(.horizontal, 12)
+                                    .padding(.vertical, 6)
+                                    .background(Color.blue.opacity(0.1))
+                                    .foregroundColor(.blue)
+                                    .cornerRadius(16)
+                            }
+                            .disabled(isGenerating || summary.isEmpty)
+                        }
+                    }
+                }
+                
+                // Custom prompt toggle
+                Toggle("Custom instruction", isOn: $showCustomPrompt)
+                
+                if showCustomPrompt {
+                    TextField("e.g., Focus on my startup experience", text: $customPrompt)
+                    
+                    Button(action: { generateWithAI(prompt: customPrompt) }) {
+                        HStack {
+                            Image(systemName: "paperplane.fill")
+                            Text("Apply Custom Instruction")
+                        }
+                    }
+                    .disabled(isGenerating || customPrompt.isEmpty || summary.isEmpty)
+                }
                 
                 if let error = errorMessage {
                     Text(error)
                         .font(.caption)
                         .foregroundColor(.red)
                 }
-            } footer: {
-                Text("AI will enhance your summary to be more professional and compelling.")
             }
         }
     }
     
-    private func generateWithAI() {
+    private func generateWithAI(prompt: String?) {
         isGenerating = true
         errorMessage = nil
         Task {
             do {
                 let generated: String
                 if summary.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                    // Generate new summary based on resume data
                     generated = try await aiService.generateSummary(resume: dataManager.resume)
+                } else if let customInstruction = prompt, !customInstruction.isEmpty {
+                    generated = try await aiService.customImprove(text: summary, instruction: customInstruction)
                 } else {
-                    // Improve existing summary
                     generated = try await aiService.improveSummary(existing: summary, resume: dataManager.resume)
                 }
                 await MainActor.run {
                     summary = generated
                     isGenerating = false
+                    customPrompt = ""
                 }
             } catch {
                 await MainActor.run {

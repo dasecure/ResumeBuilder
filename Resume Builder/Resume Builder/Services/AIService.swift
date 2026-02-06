@@ -78,6 +78,19 @@ class AIService {
         return try await sendRequest(prompt: prompt)
     }
     
+    func customImprove(text: String, instruction: String) async throws -> String {
+        let prompt = """
+        Modify the following text according to this instruction: "\(instruction)"
+        
+        Original text:
+        \(text)
+        
+        Return only the modified text. Keep it professional and suitable for a resume.
+        """
+        
+        return try await sendRequest(prompt: prompt)
+    }
+    
     func suggestSkills(for title: String, existingSkills: [String]) async throws -> [String] {
         let prompt = """
         Suggest 5 relevant skills for someone with the job title "\(title)" that they might be missing.
