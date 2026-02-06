@@ -14,8 +14,10 @@ class DataManager: ObservableObject {
         if let data = UserDefaults.standard.data(forKey: resumeKey),
            let saved = try? JSONDecoder().decode(Resume.self, from: data) {
             self.resume = saved
+            print("✅ Loaded resume: \(saved.personalInfo.fullName)")
         } else {
             self.resume = Resume()
+            print("⚠️ No saved resume found, creating new")
         }
         
         // Load saved applications
@@ -31,6 +33,8 @@ class DataManager: ObservableObject {
         resume.updatedAt = Date()
         if let data = try? JSONEncoder().encode(resume) {
             UserDefaults.standard.set(data, forKey: resumeKey)
+            UserDefaults.standard.synchronize()
+            print("✅ Resume saved: \(resume.personalInfo.fullName)")
         }
     }
     
