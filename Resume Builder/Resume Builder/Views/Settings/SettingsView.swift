@@ -155,10 +155,12 @@ struct AISettingsView: View {
                 Text("AI helps improve your resume content with better wording and suggestions.")
             }
             
-            Section("OpenAI API Key") {
+            Section {
                 SecureField("sk-...", text: $apiKey)
                     .textContentType(.password)
                     .autocapitalization(.none)
+            } header: {
+                Text("OpenAI API Key")
             } footer: {
                 Text("Optional: Add your own OpenAI API key for unlimited AI features. Get one at platform.openai.com")
             }
