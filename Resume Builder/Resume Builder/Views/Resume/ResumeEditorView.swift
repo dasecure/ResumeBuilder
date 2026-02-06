@@ -49,6 +49,7 @@ struct ResumeEditorView: View {
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
                     Button("Preview") {
+                        dataManager.saveResume()
                         showingPreview = true
                     }
                 }
@@ -483,6 +484,11 @@ struct ResumePreviewSheet: View {
                     ToolbarItem(placement: .topBarTrailing) {
                         Button("Done") { dismiss() }
                     }
+                }
+                .onAppear {
+                    print("📋 Preview - Name: \(resume.personalInfo.fullName)")
+                    print("📋 Preview - Skills count: \(resume.skills.count)")
+                    print("📋 Preview - Skills: \(resume.skills)")
                 }
         }
     }
