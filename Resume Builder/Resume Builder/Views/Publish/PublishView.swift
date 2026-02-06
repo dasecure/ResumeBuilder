@@ -5,6 +5,7 @@ struct PublishView: View {
     @EnvironmentObject var authManager: GitHubAuthManager
     @State private var isPublishing = false
     @State private var showError = false
+    @State private var showSuccess = false
     @State private var errorMessage = ""
     @State private var showShareSheet = false
     @State private var showSubdomainSetup = false
@@ -87,6 +88,16 @@ struct PublishView: View {
             } message: {
                 Text(errorMessage)
             }
+            .alert("Published! 🎉", isPresented: $showSuccess) {
+                Button("View Site") {
+                    if let url = URL(string: dataManager.resume.publishedURL ?? "") {
+                        UIApplication.shared.open(url)
+                    }
+                }
+                Button("OK", role: .cancel) { }
+            } message: {
+                Text("Your \(dataManager.resume.template.rawValue) resume is live!\n\nNote: May take 1-2 min to update due to caching.")
+            }
             .sheet(isPresented: $showShareSheet) {
                 if let url = dataManager.resume.publishedURL {
                     ShareSheet(url: url, resume: dataManager.resume)
@@ -119,6 +130,8 @@ struct PublishView: View {
                 
                 print("📄 Publishing resume for: \(dataManager.resume.personalInfo.fullName)")
                 print("📝 Summary: \(dataManager.resume.summary.prefix(50))...")
+                print("🎨 Template: \(dataManager.resume.template.rawValue)")
+                print("🔧 Skills: \(dataManager.resume.skills)")
                 
                 let url = try await apiService.deployPortfolio(
                     username: username,
@@ -131,6 +144,7 @@ struct PublishView: View {
                     dataManager.resume.publishedURL = url
                     dataManager.saveResume()
                     isPublishing = false
+                    showSuccess = true
                 }
             } catch {
                 await MainActor.run {
