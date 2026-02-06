@@ -171,6 +171,47 @@ class ResumeTemplateGenerator {
             </section>
             """)
             
+            \(r.languages.isEmpty ? "" : """
+            <section>
+                <h2>Languages</h2>
+                <div class="skills">
+                    \(r.languages.map { "<span class=\"skill\">\(escape($0.name)) <small>(\($0.proficiency.rawValue))</small></span>" }.joined())
+                </div>
+            </section>
+            """)
+            
+            \(r.achievements.isEmpty ? "" : """
+            <section>
+                <h2>Achievements</h2>
+                <ul>
+                    \(r.achievements.map { "<li>\(escape($0))</li>" }.joined())
+                </ul>
+            </section>
+            """)
+            
+            \(r.patents.isEmpty ? "" : """
+            <section>
+                <h2>Patents</h2>
+                \(r.patents.map { patent in
+                    return """
+                    <div class="experience-item">
+                        <h3>\(escape(patent.title))</h3>
+                        <p class="meta">\(patent.patentNumber.isEmpty ? "" : "\(escape(patent.patentNumber)) • ")\(patent.status.rawValue)</p>
+                    </div>
+                    """
+                }.joined())
+            </section>
+            """)
+            
+            \(r.hobbies.isEmpty ? "" : """
+            <section>
+                <h2>Hobbies & Interests</h2>
+                <div class="skills">
+                    \(r.hobbies.map { "<span class=\"skill\">\(escape($0))</span>" }.joined())
+                </div>
+            </section>
+            """)
+            
             <footer style="text-align: center; margin-top: 40px; color: #999; font-size: 0.8rem;">
                 Built with ResumeBuilder
             </footer>

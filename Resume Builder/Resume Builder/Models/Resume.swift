@@ -9,6 +9,10 @@ struct Resume: Codable, Identifiable, Equatable {
     var experiences: [Experience]
     var education: [Education]
     var skills: [String]
+    var languages: [Language]
+    var achievements: [String]
+    var patents: [Patent]
+    var hobbies: [String]
     var template: ResumeTemplate
     var isPublished: Bool
     var publishedURL: String?
@@ -22,11 +26,53 @@ struct Resume: Codable, Identifiable, Equatable {
         self.experiences = []
         self.education = []
         self.skills = []
+        self.languages = []
+        self.achievements = []
+        self.patents = []
+        self.hobbies = []
         self.template = .professional
         self.isPublished = false
         self.createdAt = Date()
         self.updatedAt = Date()
     }
+}
+
+struct Language: Codable, Identifiable, Equatable {
+    var id = UUID()
+    var name: String
+    var proficiency: LanguageProficiency
+    
+    init(name: String = "", proficiency: LanguageProficiency = .conversational) {
+        self.name = name
+        self.proficiency = proficiency
+    }
+}
+
+enum LanguageProficiency: String, Codable, CaseIterable, Equatable {
+    case native = "Native"
+    case fluent = "Fluent"
+    case conversational = "Conversational"
+    case basic = "Basic"
+}
+
+struct Patent: Codable, Identifiable, Equatable {
+    var id = UUID()
+    var title: String
+    var patentNumber: String
+    var dateIssued: Date?
+    var status: PatentStatus
+    
+    init(title: String = "", patentNumber: String = "", status: PatentStatus = .pending) {
+        self.title = title
+        self.patentNumber = patentNumber
+        self.status = status
+    }
+}
+
+enum PatentStatus: String, Codable, CaseIterable, Equatable {
+    case pending = "Pending"
+    case granted = "Granted"
+    case provisional = "Provisional"
 }
 
 struct PersonalInfo: Codable, Equatable {

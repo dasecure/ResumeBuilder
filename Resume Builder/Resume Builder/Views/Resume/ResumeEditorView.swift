@@ -21,6 +21,10 @@ struct ResumeEditorView: View {
                             .onTapGesture { selectedSection = 3 }
                         SectionTab(title: "Skills", icon: "star.fill", isSelected: selectedSection == 4)
                             .onTapGesture { selectedSection = 4 }
+                        SectionTab(title: "Languages", icon: "globe", isSelected: selectedSection == 5)
+                            .onTapGesture { selectedSection = 5 }
+                        SectionTab(title: "More", icon: "ellipsis.circle.fill", isSelected: selectedSection == 6)
+                            .onTapGesture { selectedSection = 6 }
                     }
                     .padding(.horizontal)
                 }
@@ -41,6 +45,14 @@ struct ResumeEditorView: View {
                         .tag(3)
                     SkillsSection(skills: $dataManager.resume.skills)
                         .tag(4)
+                    LanguagesSection(languages: $dataManager.resume.languages)
+                        .tag(5)
+                    MoreSection(
+                        achievements: $dataManager.resume.achievements,
+                        patents: $dataManager.resume.patents,
+                        hobbies: $dataManager.resume.hobbies
+                    )
+                        .tag(6)
                 }
                 .tabViewStyle(.page(indexDisplayMode: .never))
             }
@@ -389,6 +401,192 @@ struct SkillsSection: View {
                 }
             } catch {
                 isLoadingSuggestions = false
+            }
+        }
+    }
+}
+
+// MARK: - Languages Section
+
+struct LanguagesSection: View {
+    @Binding var languages: [Language]
+    @State private var newLanguage = ""
+    @State private var newProficiency: LanguageProficiency = .conversational
+    
+    var body: some View {
+        Form {
+            Section("Your Languages") {
+                ForEach(languages) { language in
+                    HStack {
+                        Text(language.name)
+                            .font(.headline)
+                        Spacer()
+                        Text(language.proficiency.rawValue)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                        Button(action: { languages.removeAll { $0.id == language.id } }) {
+                            Image(systemName: "minus.circle.fill")
+                                .foregroundColor(.red)
+                        }
+                    }
+                }
+                
+                HStack {
+                    TextField("Language", text: $newLanguage)
+                    Picker("Level", selection: $newProficiency) {
+                        ForEach(LanguageProficiency.allCases, id: \.self) { level in
+                            Text(level.rawValue).tag(level)
+                        }
+                    }
+                    .labelsHidden()
+                    Button(action: addLanguage) {
+                        Image(systemName: "plus.circle.fill")
+                            .foregroundColor(.green)
+                    }
+                    .disabled(newLanguage.isEmpty)
+                }
+            }
+        }
+    }
+    
+    private func addLanguage() {
+        guard !newLanguage.isEmpty else { return }
+        languages.append(Language(name: newLanguage, proficiency: newProficiency))
+        newLanguage = ""
+    }
+}
+
+// MARK: - More Section (Achievements, Patents, Hobbies)
+
+struct MoreSection: View {
+    @Binding var achievements: [String]
+    @Binding var patents: [Patent]
+    @Binding var hobbies: [String]
+    
+    @State private var newAchievement = ""
+    @State private var newHobby = ""
+    @State private var showingAddPatent = false
+    
+    var body: some View {
+        Form {
+            // Achievements
+            Section("Achievements") {
+                ForEach(achievements, id: \.self) { achievement in
+                    HStack {
+                        Text(achievement)
+                        Spacer()
+                        Button(action: { achievements.removeAll { $0 == achievement } }) {
+                            Image(systemName: "minus.circle.fill")
+                                .foregroundColor(.red)
+                        }
+                    }
+                }
+                
+                HStack {
+                    TextField("Add achievement", text: $newAchievement)
+                    Button(action: {
+                        if !newAchievement.isEmpty {
+                            achievements.append(newAchievement)
+                            newAchievement = ""
+                        }
+                    }) {
+                        Image(systemName: "plus.circle.fill")
+                            .foregroundColor(.green)
+                    }
+                    .disabled(newAchievement.isEmpty)
+                }
+            }
+            
+            // Patents
+            Section("Patents") {
+                ForEach(patents) { patent in
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(patent.title)
+                            .font(.headline)
+                        HStack {
+                            Text(patent.patentNumber.isEmpty ? "No number" : patent.patentNumber)
+                            Text("•")
+                            Text(patent.status.rawValue)
+                        }
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    }
+                }
+                .onDelete { indexSet in
+                    patents.remove(atOffsets: indexSet)
+                }
+                
+                Button(action: { showingAddPatent = true }) {
+                    Label("Add Patent", systemImage: "plus.circle.fill")
+                }
+            }
+            
+            // Hobbies
+            Section("Hobbies & Interests") {
+                FlowLayout(spacing: 8) {
+                    ForEach(Array(hobbies.enumerated()), id: \.offset) { index, hobby in
+                        SkillChip(text: hobby) {
+                            if index < hobbies.count {
+                                hobbies.remove(at: index)
+                            }
+                        }
+                    }
+                }
+                
+                HStack {
+                    TextField("Add hobby", text: $newHobby)
+                    Button(action: {
+                        if !newHobby.isEmpty {
+                            hobbies.append(newHobby)
+                            newHobby = ""
+                        }
+                    }) {
+                        Image(systemName: "plus.circle.fill")
+                            .foregroundColor(.green)
+                    }
+                    .disabled(newHobby.isEmpty)
+                }
+            }
+        }
+        .sheet(isPresented: $showingAddPatent) {
+            PatentEditView { newPatent in
+                patents.append(newPatent)
+            }
+        }
+    }
+}
+
+struct PatentEditView: View {
+    @Environment(\.dismiss) private var dismiss
+    @State private var patent = Patent()
+    let onSave: (Patent) -> Void
+    
+    var body: some View {
+        NavigationStack {
+            Form {
+                Section("Patent Details") {
+                    TextField("Title", text: $patent.title)
+                    TextField("Patent Number (optional)", text: $patent.patentNumber)
+                    Picker("Status", selection: $patent.status) {
+                        ForEach(PatentStatus.allCases, id: \.self) { status in
+                            Text(status.rawValue).tag(status)
+                        }
+                    }
+                }
+            }
+            .navigationTitle("Add Patent")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancel") { dismiss() }
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Add") {
+                        onSave(patent)
+                        dismiss()
+                    }
+                    .disabled(patent.title.isEmpty)
+                }
             }
         }
     }
