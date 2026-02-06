@@ -1,6 +1,6 @@
 import Foundation
 
-struct JobApplication: Codable, Identifiable {
+struct JobApplication: Codable, Identifiable, Equatable {
     var id = UUID()
     var company: String
     var position: String
@@ -51,7 +51,7 @@ struct JobApplication: Codable, Identifiable {
     }
 }
 
-enum ApplicationStatus: String, Codable, CaseIterable {
+enum ApplicationStatus: String, Codable, CaseIterable, Equatable {
     case applied = "Applied"
     case reviewing = "Under Review"
     case phoneScreen = "Phone Screen"
@@ -89,14 +89,14 @@ enum ApplicationStatus: String, Codable, CaseIterable {
     }
 }
 
-struct ApplicationEvent: Codable, Identifiable {
+struct ApplicationEvent: Codable, Identifiable, Equatable {
     var id = UUID()
     var type: EventType
     var date: Date
     var notes: String?
 }
 
-enum EventType: String, Codable {
+enum EventType: String, Codable, Equatable {
     case applied = "Applied"
     case statusChange = "Status Updated"
     case phoneScreen = "Phone Screen"
