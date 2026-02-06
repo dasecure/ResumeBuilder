@@ -156,25 +156,42 @@ struct TemplatePreview: View {
     }
 }
 
+import WebKit
+
 struct ResumePreviewView: View {
     let resume: Resume
     @Environment(\.dismiss) private var dismiss
     
     var body: some View {
         NavigationStack {
-            ScrollView {
-                // TODO: Render actual HTML preview
-                Text("Preview of \(resume.template.rawValue) template")
-                    .padding()
-            }
-            .navigationTitle("Preview")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button("Done") { dismiss() }
+            TemplateWebView(html: generateHTML())
+                .navigationTitle("\(resume.template.rawValue) Preview")
+                .navigationBarTitleDisplayMode(.inline)
+                .toolbar {
+                    ToolbarItem(placement: .topBarTrailing) {
+                        Button("Done") { dismiss() }
+                    }
                 }
-            }
         }
+    }
+    
+    private func generateHTML() -> String {
+        let generator = ResumeTemplateGenerator()
+        return generator.generate(resume: resume)
+    }
+}
+
+struct TemplateWebView: UIViewRepresentable {
+    let html: String
+    
+    func makeUIView(context: Context) -> WKWebView {
+        let webView = WKWebView()
+        webView.loadHTMLString(html, baseURL: nil)
+        return webView
+    }
+    
+    func updateUIView(_ webView: WKWebView, context: Context) {
+        webView.loadHTMLString(html, baseURL: nil)
     }
 }
 
