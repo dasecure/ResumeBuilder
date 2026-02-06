@@ -321,9 +321,11 @@ struct SkillsSection: View {
         Form {
             Section("Your Skills") {
                 FlowLayout(spacing: 8) {
-                    ForEach(skills, id: \.self) { skill in
+                    ForEach(Array(skills.enumerated()), id: \.offset) { index, skill in
                         SkillChip(text: skill) {
-                            skills.removeAll { $0 == skill }
+                            if index < skills.count {
+                                skills.remove(at: index)
+                            }
                         }
                     }
                 }
@@ -396,19 +398,23 @@ struct SkillChip: View {
     let onRemove: () -> Void
     
     var body: some View {
-        HStack(spacing: 4) {
+        HStack(spacing: 6) {
             Text(text)
                 .font(.caption)
+                .foregroundColor(.blue)
+            
             Button(action: onRemove) {
                 Image(systemName: "xmark.circle.fill")
-                    .font(.caption2)
+                    .font(.caption)
+                    .foregroundColor(.blue.opacity(0.7))
             }
+            .buttonStyle(.plain)
         }
         .padding(.horizontal, 12)
-        .padding(.vertical, 6)
+        .padding(.vertical, 8)
         .background(Color.blue.opacity(0.1))
-        .foregroundColor(.blue)
         .cornerRadius(16)
+        .contentShape(Rectangle())
     }
 }
 
