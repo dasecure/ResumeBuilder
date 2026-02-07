@@ -26,8 +26,10 @@ struct TemplateGalleryView: View {
             .navigationTitle("Templates")
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
-                    Button("Preview") {
+                    Button {
                         showingPreview = true
+                    } label: {
+                        Label("Preview", systemImage: "eye.fill")
                     }
                 }
             }
