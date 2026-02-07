@@ -482,6 +482,7 @@ struct LanguagesSection: View {
                 
                 HStack {
                     TextField("Language", text: $newLanguage)
+                        .onSubmit { addLanguage() }
                     Picker("Level", selection: $newProficiency) {
                         ForEach(LanguageProficiency.allCases, id: \.self) { level in
                             Text(level.rawValue).tag(level)
@@ -491,7 +492,9 @@ struct LanguagesSection: View {
                     Button(action: addLanguage) {
                         Image(systemName: "plus.circle.fill")
                             .foregroundColor(.green)
+                            .font(.title2)
                     }
+                    .buttonStyle(.borderless)
                     .disabled(newLanguage.isEmpty)
                 }
             }
