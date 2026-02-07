@@ -340,11 +340,12 @@ struct EducationSection: View {
     var body: some View {
         List {
             ForEach(education) { edu in
-                EducationRow(education: edu)
-                    .contentShape(Rectangle())
-                    .onTapGesture {
-                        editingEducation = edu
-                    }
+                Button {
+                    editingEducation = edu
+                } label: {
+                    EducationRow(education: edu)
+                }
+                .buttonStyle(.plain)
             }
             .onDelete { indexSet in
                 education.remove(atOffsets: indexSet)
