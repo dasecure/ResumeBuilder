@@ -118,8 +118,17 @@ struct ExperienceEditView: View {
 
 struct EducationEditView: View {
     @Environment(\.dismiss) private var dismiss
-    @State private var education = Education()
+    @State var education: Education
     let onSave: (Education) -> Void
+    
+    private var isEditing: Bool {
+        !education.institution.isEmpty || !education.degree.isEmpty
+    }
+    
+    init(education: Education = Education(), onSave: @escaping (Education) -> Void) {
+        _education = State(initialValue: education)
+        self.onSave = onSave
+    }
     
     var body: some View {
         NavigationStack {
@@ -143,7 +152,7 @@ struct EducationEditView: View {
                     .keyboardType(.decimalPad)
                 }
             }
-            .navigationTitle("Add Education")
+            .navigationTitle(isEditing ? "Edit Education" : "Add Education")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {

@@ -335,26 +335,22 @@ struct ExperienceRow: View {
 struct EducationSection: View {
     @Binding var education: [Education]
     @State private var showingAdd = false
+    @State private var editingEducation: Education?
     
     var body: some View {
         List {
             ForEach(education) { edu in
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(edu.degree)
-                        .font(.headline)
-                    Text(edu.institution)
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
-                    if !edu.field.isEmpty {
-                        Text(edu.field)
-                            .font(.caption)
-                            .foregroundStyle(.tertiary)
+                EducationRow(education: edu)
+                    .contentShape(Rectangle())
+                    .onTapGesture {
+                        editingEducation = edu
                     }
-                }
-                .padding(.vertical, 4)
             }
             .onDelete { indexSet in
                 education.remove(atOffsets: indexSet)
+            }
+            .onMove { from, to in
+                education.move(fromOffsets: from, toOffset: to)
             }
             
             Button(action: { showingAdd = true }) {
@@ -366,6 +362,33 @@ struct EducationSection: View {
                 education.insert(newEdu, at: 0)
             }
         }
+        .sheet(item: $editingEducation) { edu in
+            EducationEditView(education: edu) { updated in
+                if let index = education.firstIndex(where: { $0.id == updated.id }) {
+                    education[index] = updated
+                }
+            }
+        }
+    }
+}
+
+struct EducationRow: View {
+    let education: Education
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(education.degree)
+                .font(.headline)
+            Text(education.institution)
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+            if !education.field.isEmpty {
+                Text(education.field)
+                    .font(.caption)
+                    .foregroundStyle(.tertiary)
+            }
+        }
+        .padding(.vertical, 4)
     }
 }
 
